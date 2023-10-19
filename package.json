@@ -1,10 +1,10 @@
 {
   "name": "tagsearch",
-  "displayName": "tagsearch",
+  "displayName": "TagSearch",
   "description": "",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.83.0"
+    "vscode": "^1.80.0"
   },
   "categories": [
     "Other"
@@ -12,10 +12,27 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tagsearch",
+          "title": "TagSearch",
+          "icon": "icon.png"
+        }
+      ]
+    },
+    "views": {
+      "tagsearch":[
+        {
+          "id": "tagsearch-results",
+          "name": "TagSearch"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "tagsearch.helloWorld",
-        "title": "Hello World"
+        "command": "tagsearch.Search",
+        "title": "TagSearch: search for tags"
       }
     ]
   },

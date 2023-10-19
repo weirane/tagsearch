@@ -2,6 +2,8 @@
 
 This is the README for your extension "tagsearch". After writing up a brief description, we recommend including the following sections.
 
+<a href="https://www.flaticon.com/free-icons/filter" title="filter icons">Filter icons created by Freepik - Flaticon</a>
+
 ## Features
 
 Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.

@@ -1,22 +1,46 @@
+import { abort } from "process";
 import * as vscode from "vscode";
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "tagsearch" is now active!');
+  const rootPath =
+    vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+      ? vscode.workspace.workspaceFolders[0].uri.fsPath
+      : undefined;
 
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with registerCommand
-  // The commandId parameter must match the command field in package.json
-  let disposable = vscode.commands.registerCommand("tagsearch.helloWorld", () => {
-    // The code you place here will be executed every time your command is executed
-    // Display a message box to the user
+  let disposable = vscode.commands.registerCommand("tagsearch.Search", () => {
+    // TODO: perform search here
     vscode.window.showInformationMessage("Hello World from tagsearch!");
   });
-
   context.subscriptions.push(disposable);
+
+  const dataProvider = new TagSearchViewData(rootPath);
+  vscode.window.registerTreeDataProvider("tagsearch-results", dataProvider);
+}
+
+class TagSearchView {
+  constructor() {
+    // this.treeView = vscode.window.createTreeView("yourViewId", {
+    //   treeDataProvider: new TagSearchViewData(),
+    // });
+  }
+}
+
+class Result implements vscode.TreeItem {}
+
+class TagSearchViewData implements vscode.TreeDataProvider<Result> {
+  constructor(rootPath?: string) {}
+
+  getTreeItem(element: Result): Result {
+    abort();
+    // Return a tree item representing the element
+  }
+
+  getChildren(element: Result): Result[] {
+    // Return an array of child elements
+    return [];
+  }
 }
 
 // This method is called when your extension is deactivated
