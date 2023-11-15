@@ -10,9 +10,17 @@ export function activate(context: vscode.ExtensionContext) {
       ? vscode.workspace.workspaceFolders[0].uri.fsPath
       : undefined;
 
-  let disposable = vscode.commands.registerCommand("tagsearch.Search", () => {
+  let disposable = vscode.commands.registerCommand("tagsearch.Search", async () => {
+    const result = await vscode.window.showInputBox({
+      title: "TagSearch",
+      placeHolder: "tags you want to search",
+    });
+    if (result === undefined) {
+      return;
+    }
+    vscode.window.showInformationMessage(`Will search for ${result}`);
+    vscode.commands.executeCommand("workbench.view.extension.tagsearch");
     // TODO: perform search here
-    vscode.window.showInformationMessage("Hello World from tagsearch!");
   });
   context.subscriptions.push(disposable);
 
