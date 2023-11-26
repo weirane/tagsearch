@@ -24,12 +24,116 @@ export function activate(context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(disposable);
 
+  vscode.commands.executeCommand('setContext', 'tagsearchExtensionActive', true);
+
+
+  //code for assigning tags to a method
+  let tagDisposable = vscode.commands.registerCommand('tagsearch.OpenPopup', async () => {
+    const panel = vscode.window.createWebviewPanel(
+      'tagsearchPopup', 
+      'Assign Method Tags', 
+      vscode.ViewColumn.One, // Editor column to show the new webview panel 
+      {
+        enableScripts: true,
+      }
+    );
+
+    panel.webview.html = getWebviewContent();
+    panel.webview.onDidReceiveMessage(
+      message => {
+        switch (message.command) {
+          case 'assignTags':
+            // Handle the received data and assign tags
+            const { methodName, tags } = message.data;
+            assignTagsToMethod(methodName, tags);
+            break;
+        }
+      },
+      undefined,
+      context.subscriptions
+    );
+  });
+
+  context.subscriptions.push(tagDisposable);
+
+  vscode.commands.executeCommand('tagsearch.OpenPopup');
+
+  function getWebviewContent() {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Assign Method Tags</title>
+      </head>
+      <body>
+        <h1>Assign Tags to Method</h1>
+        <form id="tagForm">
+          <label for="methodName">Method Name:</label>
+          <input type="text" id="methodName" name="methodName">
+          <br><br>
+          <label for="tags">Enter Tags (comma-separated):</label>
+          <input type="text" id="tags" name="tags">
+          <br><br>
+          <button type="button" onclick="assignTags()">Assign Tags</button>
+        </form>
+  
+        <script>
+          const vscode = acquireVsCodeApi();
+  
+          document.getElementById('methodName').value = vscode.window.activeTextEditor?.document.getText(vscode.window.activeTextEditor.selection);
+  
+          function assignTags() {
+            const methodName = document.getElementById('methodName').value;
+            const tags = document.getElementById('tags').value.split(',').map(tag => tag.trim());
+            
+            vscode.postMessage({
+              command: 'assignTags',
+              data: { methodName, tags }
+            });
+          }
+        </script>
+      </body>
+      </html>
+    `;
+  }
+
+  function assignTagsToMethod(methodName: string, tags: string[]) {
+    const savedData = context.globalState.get("json_data", '{"list_of_files": []}');
+    const data = JSON.parse(savedData);
+  
+    // Find the file index and the method index
+    const fileIndex = data.list_of_files.findIndex((file: File) => {
+      return file.funcs.some((func: Function) => func.name === methodName);
+    });
+  
+    if (fileIndex !== -1) {
+      const methodIndex = data.list_of_files[fileIndex].funcs.findIndex((func: Function) => func.name === methodName);
+  
+      if (methodIndex !== -1) {
+        // Update the tags of the method
+        data.list_of_files[fileIndex].funcs[methodIndex].tags = tags;
+  
+        const jsonData = { list_of_files: [] };
+        context.globalState.update("json_data", JSON.stringify(jsonData));
+  
+        vscode.window.showInformationMessage(`Tags assigned to ${methodName}: ${tags.join(', ')}`);
+      } else {
+        vscode.window.showErrorMessage(`Method with name '${methodName}' not found.`);
+      }
+    } else {
+      vscode.window.showErrorMessage(`File containing method '${methodName}' not found.`);
+    }
+    console.log('assignTagsToMethod triggered');
+  }
+
   const dataProvider = new TagSearchViewData(rootPath);
   vscode.window.registerTreeDataProvider("tagsearch-results", dataProvider);
 
   function getData() {
     let json_data = context.globalState.get("json_data", "{'list_of_files': []}");
-    return json_data
+    return json_data;
   }
 
   // Block shows get data, set data, and deleting data
@@ -41,7 +145,7 @@ export function activate(context: vscode.ExtensionContext) {
   // console.log(getData())
   
   function updateData(new_data: string) {
-    context.globalState.update("json_data", new_data)
+    context.globalState.update("json_data", new_data);
   }
 
   function deleteData() {
