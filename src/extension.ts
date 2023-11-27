@@ -1,10 +1,15 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 // import { File } from "buffer";
 import * as vscode from "vscode";
 import { TreeItem, TreeItemCollapsibleState } from "vscode";
 
+let globalContext: null | vscode.ExtensionContext = null;
+let searchResult: null | { list_of_files: File[] } = null;
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+  globalContext = context;
   const rootPath =
     vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
       ? vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -18,9 +23,16 @@ export function activate(context: vscode.ExtensionContext) {
     if (result === undefined) {
       return;
     }
-    vscode.window.showInformationMessage(`Will search for ${result}`);
+    // perform search here
+    const searchtags = result.split(/\s+/);
+    const data = getData(context);
+    for (const file of data.list_of_files) {
+      file.funcs = file.funcs.filter((func) => func.tags.some((t) => searchtags.includes(t)));
+    }
+    data.list_of_files = data.list_of_files.filter((f) => f.funcs.length > 0);
+    console.log(data);
+    searchResult = data;
     vscode.commands.executeCommand("workbench.view.extension.tagsearch");
-    // TODO: perform search here
   });
   context.subscriptions.push(disposable);
 
@@ -55,48 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(tagDisposable);
 
-  vscode.commands.executeCommand("tagsearch.OpenPopup");
-
-  function getWebviewContent() {
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Assign Method Tags</title>
-      </head>
-      <body>
-        <h1>Assign Tags to Method</h1>
-        <form id="tagForm">
-          <label for="methodName">Method Name:</label>
-          <input type="text" id="methodName" name="methodName">
-          <br><br>
-          <label for="tags">Enter Tags (comma-separated):</label>
-          <input type="text" id="tags" name="tags">
-          <br><br>
-          <button type="button" onclick="assignTags()">Assign Tags</button>
-        </form>
-  
-        <script>
-          const vscode = acquireVsCodeApi();
-  
-          document.getElementById('methodName').value = vscode.window.activeTextEditor?.document.getText(vscode.window.activeTextEditor.selection);
-  
-          function assignTags() {
-            const methodName = document.getElementById('methodName').value;
-            const tags = document.getElementById('tags').value.split(',').map(tag => tag.trim());
-            
-            vscode.postMessage({
-              command: 'assignTags',
-              data: { methodName, tags }
-            });
-          }
-        </script>
-      </body>
-      </html>
-    `;
-  }
+  // vscode.commands.executeCommand("tagsearch.OpenPopup");
 
   function assignTagsToMethod(methodName: string, tags: string[]) {
     const savedData = context.globalState.get("json_data", '{"list_of_files": []}');
@@ -256,11 +227,6 @@ export function activate(context: vscode.ExtensionContext) {
     return data_json;
   }
 
-  const example_json = { list_of_files: [sample] };
-  const new_json = combineFileFuncs(example_json, sample2);
-  console.log(JSON.stringify(new_json));
-  console.log("");
-
   function appendNewFunction(
     func_name: string,
     func_tags: string[],
@@ -322,14 +288,15 @@ class TagSearchViewData implements vscode.TreeDataProvider<Result> {
 
   getTreeItem(element: Result): TreeItem {
     if (element.kind === "file") {
-      const ti = new TreeItem("file " + element.path, TreeItemCollapsibleState.Expanded);
-      // TODO: prettier output. icons?
+      const ti = new TreeItem(element.path, TreeItemCollapsibleState.Expanded);
       ti.contextValue = "file";
+      ti.iconPath = new vscode.ThemeIcon("file-code");
       return ti;
     } else {
-      const ti = new TreeItem("function " + element.signature, TreeItemCollapsibleState.Expanded);
-      // TODO: prettier output. display the matched tag
+      const ti = new TreeItem(element.signature, TreeItemCollapsibleState.None);
       ti.contextValue = "function";
+      ti.iconPath = new vscode.ThemeIcon("symbol-function");
+      ti.tooltip = element.description;
       return ti;
     }
   }
@@ -339,47 +306,7 @@ class TagSearchViewData implements vscode.TreeDataProvider<Result> {
       // entered the extension for the first time.
       // perform search on all files and return a list of files with functions
       // can search in promise to be async. need to save results?
-
-      // getData
-
-      // var parsedObject = JSON.parse(jsonString);
-      // console.log("Parsed Object:", parsedObject);
-
-      const sample: File = {
-        kind: "file",
-        path: "path/to/file.py",
-        funcs: [
-          {
-            kind: "func",
-            name: "name",
-            signature: "def asmatrix()",
-            tags: ["conversion", "matrix"],
-            returns: ["return_var"],
-            description: "fake description",
-            file_path: "path/to/file.py:L12-24",
-          },
-        ],
-      };
-
-      var jsonString = JSON.stringify(sample);
-      console.log("JSON String:", jsonString);
-
-      const sample2: File = {
-        kind: "file",
-        path: "path/to/file2.py",
-        funcs: [
-          {
-            kind: "func",
-            name: "name2",
-            signature: "def asmatrix()",
-            tags: ["conversion", "matrix"],
-            returns: ["return_var"],
-            description: "fake description",
-            file_path: "path/to/file.py:L12-24",
-          },
-        ],
-      };
-      return Promise.resolve([sample, sample2]);
+      return Promise.resolve(searchResult === null ? [] : searchResult.list_of_files);
     } else if (element.kind === "file") {
       // search within file (again)?
       return Promise.resolve(element.funcs);
@@ -401,6 +328,47 @@ function updateData(context: vscode.ExtensionContext, newdata: { list_of_files: 
 function getData(context: vscode.ExtensionContext): { list_of_files: File[] } {
   let json_data = context.globalState.get("json_data", "{'list_of_files': []}");
   return JSON.parse(json_data);
+}
+
+function getWebviewContent() {
+  return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Assign Method Tags</title>
+      </head>
+      <body>
+        <h1>Assign Tags to Method</h1>
+        <form id="tagForm">
+          <label for="methodName">Method Name:</label>
+          <input type="text" id="methodName" name="methodName">
+          <br><br>
+          <label for="tags">Enter Tags (comma-separated):</label>
+          <input type="text" id="tags" name="tags">
+          <br><br>
+          <button type="button" onclick="assignTags()">Assign Tags</button>
+        </form>
+  
+        <script>
+          const vscode = acquireVsCodeApi();
+  
+          document.getElementById('methodName').value = vscode.window.activeTextEditor?.document.getText(vscode.window.activeTextEditor.selection);
+  
+          function assignTags() {
+            const methodName = document.getElementById('methodName').value;
+            const tags = document.getElementById('tags').value.split(',').map(tag => tag.trim());
+            
+            vscode.postMessage({
+              command: 'assignTags',
+              data: { methodName, tags }
+            });
+          }
+        </script>
+      </body>
+      </html>
+    `;
 }
 
 // This method is called when your extension is deactivated
