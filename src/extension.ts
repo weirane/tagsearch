@@ -33,6 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
     console.log(data);
     searchResult = data;
     vscode.commands.executeCommand("workbench.view.extension.tagsearch");
+    vscode.commands.executeCommand("tagsearch.refreshEntry");
   });
   context.subscriptions.push(disposable);
 
@@ -104,6 +105,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   const dataProvider = new TagSearchViewData(rootPath);
   vscode.window.registerTreeDataProvider("tagsearch-results", dataProvider);
+
+  vscode.commands.registerCommand("tagsearch.refreshEntry", () => dataProvider.refresh());
 
   function doesFileExist(json: any, file_name: string): boolean {
     return json.list_of_files.some((item: any) => item.path === file_name);
@@ -286,6 +289,15 @@ interface File {
 type Result = Function | File;
 
 class TagSearchViewData implements vscode.TreeDataProvider<Result> {
+  private _onDidChangeTreeData: vscode.EventEmitter<Result | undefined | null | void> =
+    new vscode.EventEmitter<Result | undefined | null | void>();
+  readonly onDidChangeTreeData: vscode.Event<Result | undefined | null | void> =
+    this._onDidChangeTreeData.event;
+
+  refresh(): void {
+    this._onDidChangeTreeData.fire();
+  }
+
   constructor(rootPath?: string) {}
 
   getTreeItem(element: Result): TreeItem {
@@ -298,7 +310,7 @@ class TagSearchViewData implements vscode.TreeDataProvider<Result> {
       const ti = new TreeItem(element.signature, TreeItemCollapsibleState.None);
       ti.contextValue = "function";
       ti.iconPath = new vscode.ThemeIcon("symbol-function");
-      ti.tooltip = element.description;
+      ti.tooltip = element.description + "\nTags: " + element.tags.join(", ");
       return ti;
     }
   }

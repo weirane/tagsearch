@@ -33,8 +33,21 @@
       {
         "command": "tagsearch.Search",
         "title": "TagSearch: search for tags"
+      },
+      {
+        "command": "tagsearch.refreshEntry",
+        "title": "TagSearch: refresh entry"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "tagsearch.refreshEntry",
+          "when": "view == tagsearch",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
