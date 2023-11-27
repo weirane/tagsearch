@@ -132,27 +132,6 @@ export function activate(context: vscode.ExtensionContext) {
   const dataProvider = new TagSearchViewData(rootPath);
   vscode.window.registerTreeDataProvider("tagsearch-results", dataProvider);
 
-  function getData() {
-    let json_data = context.globalState.get("json_data", "{'list_of_files': []}");
-    return json_data;
-  }
-
-  // Block shows get data, set data, and deleting data
-
-  // console.log(getData())
-  // updateData("test")
-  // console.log(getData())
-  // deleteData()
-  // console.log(getData())
-
-  function updateData(new_data: string) {
-    context.globalState.update("json_data", new_data);
-  }
-
-  function deleteData() {
-    context.globalState.update("json_data", "{'list_of_files': []}");
-  }
-
   function doesFileExist(json: any, file_name: string): boolean {
     return json.list_of_files.some((item: any) => item.path === file_name);
   }
@@ -409,6 +388,19 @@ class TagSearchViewData implements vscode.TreeDataProvider<Result> {
       return Promise.resolve([]);
     }
   }
+}
+
+function deleteData(context: vscode.ExtensionContext) {
+  context.globalState.update("json_data", "{'list_of_files': []}");
+}
+
+function updateData(context: vscode.ExtensionContext, newdata: { list_of_files: File[] }) {
+  context.globalState.update("json_data", JSON.stringify(newdata));
+}
+
+function getData(context: vscode.ExtensionContext): { list_of_files: File[] } {
+  let json_data = context.globalState.get("json_data", "{'list_of_files': []}");
+  return JSON.parse(json_data);
 }
 
 // This method is called when your extension is deactivated
