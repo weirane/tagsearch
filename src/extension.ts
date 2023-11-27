@@ -37,6 +37,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposable);
 
   vscode.commands.executeCommand("setContext", "tagsearchExtensionActive", true);
+  // TODO: hard coded data
+  gendata(context);
 
   //code for assigning tags to a method
   let tagDisposable = vscode.commands.registerCommand("tagsearch.OpenPopup", async () => {
@@ -373,3 +375,149 @@ function getWebviewContent() {
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
+
+function gendata(context: vscode.ExtensionContext) {
+  const linAlg: File = {
+    kind: "file",
+    path: "numpy/linalg/_linalg.py",
+    funcs: [
+      {
+        kind: "func",
+        name: "isComplexType",
+        signature: "def isComplexType(t)",
+        tags: ["type", "complex", "check"],
+        returns: ["boolean"],
+        description: "checks if the value is of a complex form",
+        file_path: "numpy/linalg/_linalg.py:L122",
+      },
+
+      {
+        kind: "func",
+        name: "matrix_power",
+        signature: "def matrix_power(a)",
+        tags: ["exponent", "matrix", "square"],
+        returns: ["matrix"],
+        description: "Raise a square matrix to the (integer) power `n`.",
+        file_path: "numpy/linalg/_linalg.py:L602",
+      },
+
+      {
+        kind: "func",
+        name: "eig",
+        signature: "def eig(a)",
+        tags: ["eigenvalue", "matrix"],
+        returns: ["tuple", "array"],
+        description: "Compute the eigenvalues and right eigenvectors of a square array.",
+        file_path: "numpy/linalg/_linalg.py:L1232",
+      },
+
+      {
+        kind: "func",
+        name: "transpose",
+        signature: "def transpose(a)",
+        tags: ["conversion", "matrix"],
+        returns: ["ndarray"],
+        description: "Transpose each matrix in a stack of matrices.",
+        file_path: "numpy/linalg/_linalg.py:L208",
+      },
+    ],
+  };
+
+  const poly: File = {
+    kind: "file",
+    path: "numpy/polynomial/polynomial.py",
+    funcs: [
+      {
+        kind: "func",
+        name: "polydiv",
+        signature: "def polydiv(c1, c2)",
+        tags: ["polynomial", "divide"],
+        returns: ["polynomial"],
+        description: "Divide one polynomial by another.",
+        file_path: "numpy/polynomial/polynomial.py:L366",
+      },
+      {
+        kind: "func",
+        name: "polypow",
+        signature: "def polypow(c, pow, maxpower)",
+        tags: ["polynomial", "power", "exponent"],
+        returns: ["polynomial"],
+        description: "Raise a polynomial to a power..",
+        file_path: "numpy/polynomial/polynomial.py:L424",
+      },
+      {
+        kind: "func",
+        name: "polyline",
+        signature: "def polyline(off, sc1)",
+        tags: ["polynomial", "array", "linear"],
+        returns: ["array"],
+        description: "Returns an array representing a linear polynomial.",
+        file_path: "numpy/polynomial/polynomial.py:L113",
+      },
+      {
+        kind: "func",
+        name: "polyadd",
+        signature: "def polyadd(c1, c2)",
+        tags: ["polynomial", "add"],
+        returns: ["polynomial"],
+        description: "Add one polynomial by another.",
+        file_path: "numpy/polynomial/polynomial.py:L215",
+      },
+      {
+        kind: "func",
+        name: "polymul",
+        signature: "def polymul(c1, c2)",
+        tags: ["polynomial", "multiply"],
+        returns: ["polynomial"],
+        description: "Multiply one polynomial by another.",
+        file_path: "numpy/polynomial/polynomial.py:L328",
+      },
+    ],
+  };
+
+  const matrixlib: File = {
+    kind: "file",
+    path: "numpy/matrixlib/defmatrix.py",
+    funcs: [
+      {
+        kind: "func",
+        name: "asmatrix",
+        signature: "def asmatrix(data, dtype)",
+        tags: ["matrix", "convert", "generic"],
+        returns: ["matrix"],
+        description: "Interpret the input as a matrix.",
+        file_path: "numpy/matrixlib/defmatrix.py:L38",
+      },
+      {
+        kind: "func",
+        name: "tolist",
+        signature: "def tolist(self)",
+        tags: ["matrix", "convert", "list"],
+        returns: ["list"],
+        description: "Return the matrix as a (possibly nested) list.",
+        file_path: "numpy/matrixlib/defmatrix.py:L266",
+      },
+      {
+        kind: "func",
+        name: "sum",
+        signature: "def sum(self, axis, dtype, out)",
+        tags: ["matrix", "sum", "axis"],
+        returns: ["ndarray"],
+        description: "Returns the sum of the matrix elements, along the given axis.",
+        file_path: "numpy/matrixlib/defmatrix.py:L291",
+      },
+      {
+        kind: "func",
+        name: "max",
+        signature: "def max(self, axis, out)",
+        tags: ["matrix", "max", "axis"],
+        returns: ["ndarray"],
+        description: "Return the maximum value along an axis.",
+        file_path: "numpy/matrixlib/defmatrix.py:L613",
+      },
+    ],
+  };
+
+  const data = { list_of_files: [linAlg, poly, matrixlib] };
+  updateData(context, data);
+}
