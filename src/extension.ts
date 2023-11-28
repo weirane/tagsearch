@@ -80,7 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(tagDisposable);
 
-  // vscode.commands.executeCommand("tagsearch.OpenPopup");
+ vscode.commands.executeCommand("tagsearch.OpenPopup");
 
   function assignTagsToMethod(methodName: string, tags: string[]) {
     const savedData = context.globalState.get("json_data", '{"list_of_files": []}');
