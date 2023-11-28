@@ -14,6 +14,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
       ? vscode.workspace.workspaceFolders[0].uri.fsPath
       : undefined;
+  if (rootPath === undefined) {
+    vscode.window.showErrorMessage("no rootpath detected, abort");
+    return;
+  }
 
   let disposable = vscode.commands.registerCommand("tagsearch.Search", async () => {
     const result = await vscode.window.showInputBox({
@@ -34,6 +38,12 @@ export function activate(context: vscode.ExtensionContext) {
     searchResult = data;
     vscode.commands.executeCommand("workbench.view.extension.tagsearch");
     vscode.commands.executeCommand("tagsearch.refreshEntry");
+  });
+  context.subscriptions.push(disposable);
+
+  disposable = vscode.commands.registerCommand("tagsearch.jumpto", (arg1, arg2) => {
+    vscode.window.showInformationMessage(`Arguments received: ${arg1}, ${arg2}`);
+    jumpto(arg1, arg2);
   });
   context.subscriptions.push(disposable);
 
@@ -271,6 +281,20 @@ export function activate(context: vscode.ExtensionContext) {
   return context;
 }
 
+async function jumpto(file: string, line: number) {
+  const uri = vscode.Uri.file(file);
+  await vscode.commands.executeCommand("vscode.open", uri);
+  const editor = vscode.window.activeTextEditor;
+  if (editor === undefined) {
+    console.log("no editor to jump");
+    return;
+  }
+  const position = new vscode.Position(line - 1, 0);
+  const range = editor.document.lineAt(position.line).range;
+  editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+  editor.selection = new vscode.Selection(position, position);
+}
+
 interface Function {
   kind: "func";
   name: string;
@@ -293,12 +317,15 @@ class TagSearchViewData implements vscode.TreeDataProvider<Result> {
     new vscode.EventEmitter<Result | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<Result | undefined | null | void> =
     this._onDidChangeTreeData.event;
+  private rootPath: string;
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
   }
 
-  constructor(rootPath?: string) {}
+  constructor(rootPath: string) {
+    this.rootPath = rootPath;
+  }
 
   getTreeItem(element: Result): TreeItem {
     if (element.kind === "file") {
@@ -307,10 +334,16 @@ class TagSearchViewData implements vscode.TreeDataProvider<Result> {
       ti.iconPath = new vscode.ThemeIcon("file-code");
       return ti;
     } else {
+      const [file, line] = element.file_path.split(":L", 2);
       const ti = new TreeItem(element.signature, TreeItemCollapsibleState.None);
       ti.contextValue = "function";
       ti.iconPath = new vscode.ThemeIcon("symbol-function");
-      ti.tooltip = element.description + "\nTags: " + element.tags.join(", ");
+      ti.tooltip = element.description + "\nTags: " + element.tags.join(", ") + "\nLine " + line;
+      ti.command = {
+        command: "tagsearch.jumpto",
+        title: "jumpto",
+        arguments: [this.rootPath + "/" + file, +line],
+      };
       return ti;
     }
   }
